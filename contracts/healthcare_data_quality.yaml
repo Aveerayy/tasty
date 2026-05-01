@@ -1,0 +1,15 @@
+version: 0.1.0
+contractId: healthcare.data.quality
+domain: healthcare
+eventType: clinical_data_quality_alert
+schema:
+  required:
+    - patientRecordId
+    - missingCriticalFields
+qualityRules:
+  - id: missing_critical_flag
+    expression: missingCriticalFields == true
+trigger:
+  ruleSet: healthcare-default
+  recommendedAction: open_data_stewardship_task
+  requiresApproval: false

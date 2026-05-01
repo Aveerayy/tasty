@@ -1,0 +1,16 @@
+version: 0.1.0
+contractId: finance.payment.risk
+domain: finance
+eventType: payment_risk_spike
+schema:
+  required:
+    - paymentId
+    - accountId
+    - riskScore
+qualityRules:
+  - id: risk_threshold
+    expression: riskScore >= 0.9
+trigger:
+  ruleSet: finance-default
+  recommendedAction: hold_payment
+  requiresApproval: true
