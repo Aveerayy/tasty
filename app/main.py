@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 
 from app.executor import action_executor
 from app.models import (
@@ -6,12 +9,15 @@ from app.models import (
     ActionStatus,
     EventAck,
     IngestEventRequest,
+    PlaygroundRunRequest,
+    PlaygroundRunResponse,
     PolicyDecision,
     PolicyEvaluationRequest,
     TriggerDecision,
     TriggerEvaluationRequest,
 )
 from app.policy import policy_engine
+from app.playground_service import playground_service
 from app.store import store
 from app.triggers import trigger_engine
 
@@ -57,3 +63,25 @@ def get_action_status(action_id: str) -> ActionStatus:
     if not status:
         raise HTTPException(status_code=404, detail=f"action not found: {action_id}")
     return status
+
+
+@app.get("/playground", response_class=HTMLResponse)
+def playground() -> str:
+    page = Path(__file__).parent / "static" / "playground.html"
+    return page.read_text(encoding="utf-8")
+
+
+@app.get("/v1/playground/scenarios")
+def playground_scenarios() -> dict:
+    return playground_service.list_scenarios()
+
+
+@app.post("/v1/playground/run", response_model=PlaygroundRunResponse)
+def playground_run(request: PlaygroundRunRequest) -> PlaygroundRunResponse:
+    return playground_service.run(request)
+
+
+@app.post("/v1/playground/reset")
+def playground_reset() -> dict:
+    store.reset()
+    return {"ok": True}

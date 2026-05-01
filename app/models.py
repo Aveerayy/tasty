@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 Domain = Literal["security", "finance", "healthcare"]
 ActionState = Literal["pending", "approved", "executing", "completed", "failed", "rolled_back"]
+PlaygroundMode = Literal["today", "reverse"]
 
 
 class IngestEventRequest(BaseModel):
@@ -64,3 +65,25 @@ class ActionStatus(BaseModel):
     updatedAt: datetime
     auditRef: Optional[str] = None
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlaygroundRunRequest(BaseModel):
+    mode: PlaygroundMode
+    domain: Domain
+    scenarioId: str
+    actor: str = "playground-user"
+    dryRun: bool = True
+
+
+class PlaygroundStep(BaseModel):
+    name: str
+    status: Literal["done", "skipped", "failed"]
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlaygroundRunResponse(BaseModel):
+    mode: PlaygroundMode
+    domain: Domain
+    scenarioId: str
+    summary: str
+    steps: list[PlaygroundStep]

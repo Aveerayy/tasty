@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tasty Playground</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0b1220; color: #e5ecff; margin: 0; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    h1 { margin-bottom: 8px; }
+    .sub { color: #9db1d8; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { background: #111b31; border: 1px solid #253a63; border-radius: 12px; padding: 14px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    select, button, input { padding: 8px; border-radius: 8px; border: 1px solid #2e4a7f; background: #0f1830; color: #e5ecff; }
+    button { cursor: pointer; background: #1f3d75; }
+    button:hover { background: #2a4f95; }
+    pre { background: #0a1327; border: 1px solid #223457; border-radius: 8px; padding: 10px; overflow: auto; max-height: 420px; }
+    .pill { display: inline-block; padding: 4px 8px; border: 1px solid #3c5e9c; border-radius: 999px; color: #9fc0ff; font-size: 12px; }
+    .small { font-size: 12px; color: #9db1d8; }
+    @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>tasty Playground</h1>
+    <div class="sub">Interactive demo with fake data: compare <strong>today model</strong> vs <strong>reverse-trigger model</strong> and watch action flows live.</div>
+    <div class="row">
+      <span class="pill">No setup auth</span>
+      <span class="pill">Fake data seeded</span>
+      <span class="pill">Out-of-box demo</span>
+    </div>
+
+    <div class="card" style="margin: 14px 0;">
+      <div class="row">
+        <label>Domain</label>
+        <select id="domain"></select>
+        <label>Scenario</label>
+        <select id="scenario"></select>
+        <label>Actor</label>
+        <input id="actor" value="playground-user" />
+        <label><input type="checkbox" id="dryRun" checked /> Dry run</label>
+        <button id="refresh">Reload scenarios</button>
+        <button id="reset">Reset store</button>
+      </div>
+      <div class="small">Run both models for the same scenario to compare behavior and governance loop outcomes.</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Today model (Prompt -> Agent -> Data -> Action)</h3>
+        <div class="row"><button id="runToday">Run Today Model</button></div>
+        <pre id="todayOut">Waiting...</pre>
+      </div>
+      <div class="card">
+        <h3>Reverse model (Data change -> Trigger -> Approval -> Action)</h3>
+        <div class="row"><button id="runReverse">Run Reverse Model</button></div>
+        <pre id="reverseOut">Waiting...</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let scenarioMap = {};
+
+    async function loadScenarios() {
+      const res = await fetch('/v1/playground/scenarios');
+      const data = await res.json();
+      scenarioMap = data;
+      const domainSelect = document.getElementById('domain');
+      domainSelect.innerHTML = '';
+      Object.keys(data).forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        domainSelect.appendChild(opt);
+      });
+      updateScenarioOptions();
+    }
+
+    function updateScenarioOptions() {
+      const domain = document.getElementById('domain').value;
+      const scenarioSelect = document.getElementById('scenario');
+      scenarioSelect.innerHTML = '';
+      (scenarioMap[domain] || []).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name + ' (' + s.id + ')';
+        scenarioSelect.appendChild(opt);
+      });
+    }
+
+    async function run(mode, targetEl) {
+      const body = {
+        mode,
+        domain: document.getElementById('domain').value,
+        scenarioId: document.getElementById('scenario').value,
+        actor: document.getElementById('actor').value || 'playground-user',
+        dryRun: document.getElementById('dryRun').checked
+      };
+      const out = document.getElementById(targetEl);
+      out.textContent = 'Running...';
+      const res = await fetch('/v1/playground/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await res.json();
+      out.textContent = JSON.stringify(json, null, 2);
+    }
+
+    async function resetStore() {
+      await fetch('/v1/playground/reset', { method: 'POST' });
+      document.getElementById('todayOut').textContent = 'Store reset. Run a demo.';
+      document.getElementById('reverseOut').textContent = 'Store reset. Run a demo.';
+    }
+
+    document.getElementById('domain').addEventListener('change', updateScenarioOptions);
+    document.getElementById('runToday').addEventListener('click', () => run('today', 'todayOut'));
+    document.getElementById('runReverse').addEventListener('click', () => run('reverse', 'reverseOut'));
+    document.getElementById('reset').addEventListener('click', resetStore);
+    document.getElementById('refresh').addEventListener('click', loadScenarios);
+    loadScenarios();
+  </script>
+</body>
+</html>

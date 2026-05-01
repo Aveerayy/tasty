@@ -1,6 +1,21 @@
 # tasty
 
-Implementation-first product foundation for `caeesar` style lineage-first AI governance.
+`tasty` is the runnable product implementation for the caeesar platform vision:
+a lineage-first AI governance control plane that sits between AI agents and enterprise systems.
+
+It is designed for low-friction adoption: install fast, run locally, and demo immediately with realistic scenarios.
+
+## What the product is about
+
+Most AI agent stacks are one-way:
+
+`user prompt -> LLM/agent -> data/tool access -> output/action`
+
+This product supports that model, but it also adds the core differentiator:
+
+`data/lineage/policy change -> trigger -> policy/approval loop -> outbound action`
+
+That reverse-trigger model turns governance signals into safe, auditable automation.
 
 ## What is included
 
@@ -12,6 +27,55 @@ Implementation-first product foundation for `caeesar` style lineage-first AI gov
 - In-memory audit/action store
 - Starter data contracts for security, finance, healthcare
 - API tests for end-to-end trigger flow
+- Interactive playground with fake data and side-by-side demo modes
+- Out-of-box Docker run for one-command startup
+
+## How the product works
+
+Core flow:
+
+1. **Ingest signal** (`/v1/events/ingest`) from data/lineage/quality events.
+2. **Evaluate trigger** (`/v1/triggers/evaluate`) to decide if automation should fire.
+3. **Evaluate policy** (`/v1/policy/evaluate`) for allow/deny + approval requirements.
+4. **Execute action** (`/v1/actions/execute`) in dry-run or live mode.
+5. **Track status** (`/v1/actions/{id}`) with audit references.
+
+Playground adds orchestration endpoints:
+
+- `GET /v1/playground/scenarios`
+- `POST /v1/playground/run`
+- `POST /v1/playground/reset`
+
+## Playground (live product demo)
+
+The playground shows two models side-by-side using fake data:
+
+1. **Today model**: prompt -> agent -> data/tools -> action
+2. **Reverse model**: data change -> trigger -> policy/approval -> action
+
+Use it at:
+
+- `http://127.0.0.1:8000/playground`
+
+Playground features:
+
+- Domain examples: security, finance, healthcare
+- Fake data scenario presets
+- One-click run for both models
+- Resettable in-memory state for repeated demos
+- Dry-run mode for safe demonstrations
+
+Included scenarios:
+
+- **Security**
+  - Critical vulnerability detection
+  - Reverse-trigger recommended action: `create_patch_pr`
+- **Finance**
+  - Payment risk spike
+  - Reverse-trigger recommended action: `hold_payment`
+- **Healthcare**
+  - Clinical data quality alert
+  - Reverse-trigger recommended action: `open_data_stewardship_task`
 
 ## Quick start
 
@@ -23,6 +87,42 @@ uvicorn app.main:app --reload
 ```
 
 Open docs at `http://127.0.0.1:8000/docs`.
+Open playground at `http://127.0.0.1:8000/playground`.
+
+## Out-of-box Docker run
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+- API docs: `http://127.0.0.1:8000/docs`
+- Playground: `http://127.0.0.1:8000/playground`
+
+## Demo environment setup (for product testing)
+
+### Option A: Local Python
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install ".[dev]"
+uvicorn app.main:app --reload
+```
+
+### Option B: Docker
+
+```bash
+docker compose up --build
+```
+
+### Validate environment
+
+```bash
+curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8000/v1/playground/scenarios
+```
 
 ## Run tests
 
@@ -30,12 +130,58 @@ Open docs at `http://127.0.0.1:8000/docs`.
 pytest -q
 ```
 
-## First scenario (security)
+## Run scenarios from API (today vs reverse)
 
-1. Ingest event `critical_vulnerability_detected`.
-2. Evaluate triggers with rule set `security-default`.
-3. Evaluate policy for recommended action `create_patch_pr`.
-4. Execute action in dry-run mode.
-5. Query action status.
+### Security
 
-This is the low-friction MVP path: one service, one API contract, one vertical domain loop.
+```bash
+curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"today","domain":"security","scenarioId":"sec-vuln-critical","actor":"demo-user","dryRun":true}'
+
+curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"reverse","domain":"security","scenarioId":"sec-vuln-critical","actor":"demo-user","dryRun":true}'
+```
+
+### Finance
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"today","domain":"finance","scenarioId":"fin-payment-risk","actor":"demo-user","dryRun":true}'
+
+curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"reverse","domain":"finance","scenarioId":"fin-payment-risk","actor":"demo-user","dryRun":true}'
+```
+
+### Healthcare
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"today","domain":"healthcare","scenarioId":"hc-data-quality","actor":"demo-user","dryRun":true}'
+
+curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"reverse","domain":"healthcare","scenarioId":"hc-data-quality","actor":"demo-user","dryRun":true}'
+```
+
+This is the low-friction MVP path: one service, one API contract, one immediate demo surface.
+
+## Why playground design looks like this
+
+This playground follows common API/demo best practices:
+
+- guided scenario flow with executable steps
+- isolated fake/sandbox data
+- side-by-side comparison mode for product differentiation
+- reset/replay support for demos
+
+References:
+
+- [Interactive Playground setup patterns](https://documentation.ai/docs/api-documentation-and-playground/interactive-playground-setup)
+- [API sandbox best practices](https://www.digitalapi.ai/blogs/simple-api-sandbox-architecture-how-it-works-best-practices)
+- [Live fake-data playground concepts](https://fakeapifordevs.vercel.app/)
+- [Webhook simulation ideas for trigger demos](https://webhooksimulator.com/features/simulated-data-generation)

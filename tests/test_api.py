@@ -60,3 +60,41 @@ def test_security_reverse_trigger_flow() -> None:
     )
     assert action.status_code == 202
     assert action.json()["state"] == "pending"
+
+
+def test_playground_endpoints() -> None:
+    scenarios = client.get("/v1/playground/scenarios")
+    assert scenarios.status_code == 200
+    body = scenarios.json()
+    assert "security" in body
+    assert len(body["security"]) > 0
+
+    run_today = client.post(
+        "/v1/playground/run",
+        json={
+            "mode": "today",
+            "domain": "security",
+            "scenarioId": "sec-vuln-critical",
+            "actor": "playground-user",
+            "dryRun": True,
+        },
+    )
+    assert run_today.status_code == 200
+    assert "today" == run_today.json()["mode"]
+
+    run_reverse = client.post(
+        "/v1/playground/run",
+        json={
+            "mode": "reverse",
+            "domain": "security",
+            "scenarioId": "sec-vuln-critical",
+            "actor": "playground-user",
+            "dryRun": True,
+        },
+    )
+    assert run_reverse.status_code == 200
+    assert "reverse" == run_reverse.json()["mode"]
+
+    page = client.get("/playground")
+    assert page.status_code == 200
+    assert "tasty Playground" in page.text

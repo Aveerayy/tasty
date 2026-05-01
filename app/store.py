@@ -75,5 +75,10 @@ class InMemoryStore:
     def get_action(self, action_id: str) -> ActionStatus | None:
         return self.actions.get(action_id)
 
+    def reset(self) -> None:
+        self.events.clear()
+        self.actions.clear()
+        self.audit.clear()
+
 
 store = InMemoryStore()
