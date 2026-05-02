@@ -76,7 +76,7 @@ Components:
 - **Playground orchestrator** (`app/playground_service.py`)
 - **Playground UI** (`app/static/playground.html`)
 
-This allows a complete end-to-end run path with no external broker or database for first deployment.
+This now supports a complete end-to-end run path with persistent Postgres storage for production-like demos and onboarding.
 
 ## New API endpoints (this iteration)
 
@@ -87,6 +87,8 @@ This allows a complete end-to-end run path with no external broker or database f
 - `GET /v1/etl/sources`
 - `POST /v1/etl/runs`
 - `GET /v1/etl/runs`
+- `GET /v1/platform/pool-config`
+- `PUT /v1/platform/pool-config`
 
 These complement existing ingestion/trigger/policy/action endpoints.
 
@@ -165,10 +167,17 @@ curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
 curl -s -X POST http://127.0.0.1:8000/v1/playground/reset
 ```
 
+## Persistence and readiness updates
+
+- Postgres-backed persistence added for events, actions, approvals, ETL sources/runs, intelligence metrics, and pool config.
+- Docker Compose now provisions both API and Postgres with persistent volume.
+- Onboarding and demo environment guides added for customer rollout:
+  - `CUSTOMER_ONBOARDING.md`
+  - `DEMO_ENVIRONMENT.md`
+
 ## Next implementation steps
 
-1. Persist store to Postgres.
-2. Add explicit approval endpoints and state transitions.
-3. Add webhook/adapter execution connectors.
-4. Add request history and shareable playground run links.
-5. Add OpenAPI-generated request forms in the playground.
+1. Add webhook/adapter execution connectors.
+2. Add request history and shareable playground run links.
+3. Add OpenAPI-generated request forms in the playground.
+4. Add role-based access controls around policy and approval endpoints.

@@ -206,7 +206,7 @@ Data-driven workflows execute automatically within governance boundaries.
 
 - Harden out-of-box deployment (local + Docker + scripts).
 - Add shareable demo runs and scenario packs.
-- Add persistence and reliability controls (DB, queue, retries).
+- Add persistence and reliability controls (DB, queue, retries). *(Postgres persistence is now implemented in `tasty`.)*
 
 **Exit criteria**  
 Platform can be installed quickly and tested by new teams with minimal support.

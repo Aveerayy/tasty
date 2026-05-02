@@ -30,11 +30,12 @@ That reverse-trigger model turns governance signals into safe, auditable automat
 - Reverse-trigger evaluation engine
 - Approval issuance endpoint for governed live execution
 - Action execution endpoint (dry-run + simulated live mode)
-- In-memory audit/action store
+- Persistent Postgres-backed store (or in-memory fallback when `DATABASE_URL` is unset)
 - Starter data contracts for security, finance, healthcare
 - API tests for end-to-end trigger flow
 - Interactive playground with fake data and side-by-side demo modes
 - Out-of-box Docker run for one-command startup
+- Customer onboarding and demo environment guides
 
 ## How the product works
 
@@ -122,13 +123,19 @@ Then open:
 
 ## Demo environment setup (for product testing)
 
-### Option A: Local Python
+### Option A: Local Python (in-memory by default)
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install ".[dev]"
 uvicorn app.main:app --reload
+```
+
+Use Postgres locally by setting:
+
+```bash
+export DATABASE_URL="postgresql+psycopg://tasty:tasty@127.0.0.1:5432/tasty"
 ```
 
 ### Option B: Docker
@@ -143,6 +150,7 @@ docker compose up --build
 curl -s http://127.0.0.1:8000/health
 curl -s http://127.0.0.1:8000/v1/playground/scenarios
 curl -s "http://127.0.0.1:8000/v1/intelligence/systems?domain=finance"
+curl -s "http://127.0.0.1:8000/v1/platform/pool-config"
 ```
 
 ### Register ETL source and ingestion run (example)
@@ -202,6 +210,21 @@ curl -s -X POST http://127.0.0.1:8000/v1/playground/run \
 ```
 
 This is the low-friction MVP path: one service, one API contract, one immediate demo surface.
+
+## Central pool provider configuration
+
+The platform supports both models:
+- `customer_managed`: customer owns the warehouse/lake, platform connects.
+- `platform_managed`: platform owns and operates the pool.
+
+Manage this with:
+- `GET /v1/platform/pool-config`
+- `PUT /v1/platform/pool-config`
+
+## Full onboarding and demo guides
+
+- Customer onboarding: [`CUSTOMER_ONBOARDING.md`](CUSTOMER_ONBOARDING.md)
+- Demo environment: [`DEMO_ENVIRONMENT.md`](DEMO_ENVIRONMENT.md)
 
 ## Why playground design looks like this
 

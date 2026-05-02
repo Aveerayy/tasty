@@ -185,3 +185,24 @@ def test_etl_source_and_runs_update_intelligence() -> None:
     runs = client.get("/v1/etl/runs?sourceId=src_salesforce_crm")
     assert runs.status_code == 200
     assert len(runs.json()["runs"]) >= 1
+
+
+def test_pool_config_endpoints() -> None:
+    current = client.get("/v1/platform/pool-config")
+    assert current.status_code == 200
+    assert current.json()["provider"] in {"customer_managed", "platform_managed"}
+
+    updated = client.put(
+        "/v1/platform/pool-config",
+        json={
+            "provider": "platform_managed",
+            "poolType": "lakehouse",
+            "platform": "caeesar-managed",
+            "region": "us",
+            "owner": "caeesar-cloud",
+            "notes": "managed pilot",
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["provider"] == "platform_managed"
+    assert updated.json()["platform"] == "caeesar-managed"

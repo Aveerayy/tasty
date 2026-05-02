@@ -21,6 +21,8 @@ from app.models import (
     IntelligenceQueryResponse,
     PlaygroundRunRequest,
     PlaygroundRunResponse,
+    PoolConfigRequest,
+    PoolConfigResponse,
     PolicyDecision,
     PolicyEvaluationRequest,
     TriggerDecision,
@@ -113,6 +115,16 @@ def record_etl_run(request: EtlRunRequest) -> EtlRunRecord:
 def list_etl_runs(sourceId: Optional[str] = None) -> dict:
     runs = store.list_etl_runs(source_id=sourceId)
     return {"runs": [r.model_dump(mode="json") for r in runs]}
+
+
+@app.get("/v1/platform/pool-config", response_model=PoolConfigResponse)
+def get_pool_config() -> PoolConfigResponse:
+    return store.get_pool_config()
+
+
+@app.put("/v1/platform/pool-config", response_model=PoolConfigResponse)
+def update_pool_config(request: PoolConfigRequest) -> PoolConfigResponse:
+    return store.set_pool_config(request)
 
 
 @app.get("/playground", response_class=HTMLResponse)

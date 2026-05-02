@@ -10,6 +10,7 @@ Domain = Literal["security", "finance", "healthcare"]
 ActionState = Literal["pending", "approved", "executing", "completed", "failed", "rolled_back"]
 PlaygroundMode = Literal["today", "reverse"]
 RiskTier = Literal["low", "medium", "high", "critical"]
+PoolProvider = Literal["customer_managed", "platform_managed"]
 
 
 class IngestEventRequest(BaseModel):
@@ -153,6 +154,25 @@ class EtlRunRecord(BaseModel):
     lineageCoverage: float
     notes: Optional[str] = None
     createdAt: datetime
+
+
+class PoolConfigRequest(BaseModel):
+    provider: PoolProvider
+    poolType: Literal["lake", "warehouse", "lakehouse"]
+    platform: str
+    region: str = "us"
+    owner: str = "data-platform"
+    notes: Optional[str] = None
+
+
+class PoolConfigResponse(BaseModel):
+    provider: PoolProvider
+    poolType: Literal["lake", "warehouse", "lakehouse"]
+    platform: str
+    region: str
+    owner: str
+    notes: Optional[str] = None
+    updatedAt: datetime
 
 
 class PlaygroundRunRequest(BaseModel):

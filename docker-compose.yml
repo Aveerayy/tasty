@@ -1,7 +1,25 @@
 services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=tasty
+      - POSTGRES_USER=tasty
+      - POSTGRES_PASSWORD=tasty
+    ports:
+      - "5432:5432"
+    volumes:
+      - tasty-postgres-data:/var/lib/postgresql/data
+
   tasty:
     build: .
+    depends_on:
+      - postgres
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql+psycopg://tasty:tasty@postgres:5432/tasty
+
+volumes:
+  tasty-postgres-data:
