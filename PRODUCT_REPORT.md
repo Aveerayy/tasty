@@ -36,6 +36,8 @@ Primary value:
 - Centralized read-only intelligence layer over business systems.
 - Quality-aware trigger decisions and risk-tier policy decisions.
 - Explicit approval token flow for high-risk live execution.
+- Optional API-key auth and role-based endpoint protection.
+- Connector-aware live execution path with retry behavior.
 
 ### Playground capabilities
 
@@ -174,6 +176,8 @@ curl -s -X POST http://127.0.0.1:8000/v1/playground/reset
 - Onboarding and demo environment guides added for customer rollout:
   - `CUSTOMER_ONBOARDING.md`
   - `DEMO_ENVIRONMENT.md`
+- Role model and API-key controls added for production-like onboarding security checks.
+- Connector integration point added via webhook adapter with configurable retries.
 
 ## Next implementation steps
 

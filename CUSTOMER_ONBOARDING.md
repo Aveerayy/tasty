@@ -60,10 +60,14 @@ curl -s -X POST http://127.0.0.1:8000/v1/etl/sources \
 - Policy:
   - Validate risk-tier behavior (`low|medium|high|critical`).
   - Confirm high/critical live actions require approvals.
+- Access:
+  - Enable API-key auth in production-like environments.
+  - Validate RBAC mappings (`admin`, `operator`, `approver`, `steward`).
 - Trigger:
   - Validate quality thresholding for reverse-trigger actions.
 - Execution:
   - Test dry-run first, then controlled live actions.
+  - Configure webhook connector and retry limits for live actions.
 - Audit:
   - Confirm action IDs and approval IDs are traceable.
 

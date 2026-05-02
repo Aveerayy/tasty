@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
+from app.auth import authorize
 from app.executor import action_executor
 from app.intelligence import intelligence_layer
 from app.models import (
@@ -46,7 +47,10 @@ def health() -> dict:
 
 
 @app.post("/v1/events/ingest", response_model=EventAck, status_code=202)
-def ingest_event(request: IngestEventRequest) -> EventAck:
+def ingest_event(
+    request: IngestEventRequest,
+    _: None = Depends(authorize({"admin", "operator", "steward"})),
+) -> EventAck:
     event_id = store.ingest_event(request)
     return EventAck(eventId=event_id, accepted=True)
 
@@ -65,7 +69,10 @@ def evaluate_triggers(request: TriggerEvaluationRequest) -> TriggerDecision:
 
 
 @app.post("/v1/actions/execute", response_model=ActionStatus, status_code=202)
-def execute_action(request: ActionExecuteRequest) -> ActionStatus:
+def execute_action(
+    request: ActionExecuteRequest,
+    _: None = Depends(authorize({"admin", "operator"})),
+) -> ActionStatus:
     return action_executor.execute(request)
 
 
@@ -78,7 +85,10 @@ def get_action_status(action_id: str) -> ActionStatus:
 
 
 @app.post("/v1/approvals/issue", response_model=ApprovalToken, status_code=201)
-def issue_approval(request: ApprovalRequest) -> ApprovalToken:
+def issue_approval(
+    request: ApprovalRequest,
+    _: None = Depends(authorize({"admin", "approver"})),
+) -> ApprovalToken:
     return store.create_approval(actor=request.actor)
 
 
@@ -94,7 +104,10 @@ def intelligence_query(request: IntelligenceQueryRequest) -> IntelligenceQueryRe
 
 
 @app.post("/v1/etl/sources", response_model=EtlSource, status_code=201)
-def register_etl_source(request: EtlSourceRequest) -> EtlSource:
+def register_etl_source(
+    request: EtlSourceRequest,
+    _: None = Depends(authorize({"admin", "steward"})),
+) -> EtlSource:
     return store.register_source(request)
 
 
@@ -105,7 +118,10 @@ def list_etl_sources(domain: Optional[str] = None) -> dict:
 
 
 @app.post("/v1/etl/runs", response_model=EtlRunRecord, status_code=201)
-def record_etl_run(request: EtlRunRequest) -> EtlRunRecord:
+def record_etl_run(
+    request: EtlRunRequest,
+    _: None = Depends(authorize({"admin", "steward"})),
+) -> EtlRunRecord:
     if request.sourceId not in {s.sourceId for s in store.list_sources()}:
         raise HTTPException(status_code=404, detail=f"etl source not found: {request.sourceId}")
     return store.record_etl_run(request)
@@ -123,7 +139,10 @@ def get_pool_config() -> PoolConfigResponse:
 
 
 @app.put("/v1/platform/pool-config", response_model=PoolConfigResponse)
-def update_pool_config(request: PoolConfigRequest) -> PoolConfigResponse:
+def update_pool_config(
+    request: PoolConfigRequest,
+    _: None = Depends(authorize({"admin"})),
+) -> PoolConfigResponse:
     return store.set_pool_config(request)
 
 

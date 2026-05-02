@@ -30,6 +30,8 @@ That reverse-trigger model turns governance signals into safe, auditable automat
 - Reverse-trigger evaluation engine
 - Approval issuance endpoint for governed live execution
 - Action execution endpoint (dry-run + simulated live mode)
+- Connector-aware live action execution with retry controls
+- Optional API-key auth and role-based access controls (RBAC)
 - Persistent Postgres-backed store (or in-memory fallback when `DATABASE_URL` is unset)
 - Starter data contracts for security, finance, healthcare
 - API tests for end-to-end trigger flow
@@ -220,6 +222,36 @@ The platform supports both models:
 Manage this with:
 - `GET /v1/platform/pool-config`
 - `PUT /v1/platform/pool-config`
+
+## Security and access control
+
+Auth/RBAC is opt-in for low-friction local demos:
+
+```bash
+export AUTH_ENABLED=true
+export CONTROL_PLANE_API_KEY="replace-with-secure-key"
+```
+
+Then call protected write endpoints with:
+- header `x-api-key: <CONTROL_PLANE_API_KEY>`
+- header `x-actor-role: admin|operator|approver|steward`
+
+Role examples:
+- `admin`: full write access including platform config
+- `operator`: execute actions and ingest events
+- `approver`: issue approval tokens
+- `steward`: ETL/source ingestion operations
+
+## Connector and retry controls
+
+Live action execution supports webhook connectors and retries:
+
+```bash
+export ACTION_WEBHOOK_URL="https://your-orchestrator.example.com/actions"
+export ACTION_MAX_RETRIES=2
+```
+
+If no webhook URL is configured, live execution remains in simulated mode for safe demos.
 
 ## Full onboarding and demo guides
 

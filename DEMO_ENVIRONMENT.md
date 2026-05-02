@@ -13,6 +13,15 @@ This environment demonstrates the full platform:
 docker compose up --build -d
 ```
 
+Optional security/reliability toggles:
+
+```bash
+export AUTH_ENABLED=true
+export CONTROL_PLANE_API_KEY="replace-with-secure-key"
+export ACTION_WEBHOOK_URL="https://your-orchestrator.example.com/actions"
+export ACTION_MAX_RETRIES=2
+```
+
 ## Verify services
 
 ```bash

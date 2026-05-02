@@ -1,3 +1,5 @@
+import os
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -206,3 +208,80 @@ def test_pool_config_endpoints() -> None:
     assert updated.status_code == 200
     assert updated.json()["provider"] == "platform_managed"
     assert updated.json()["platform"] == "caeesar-managed"
+
+
+def test_live_action_connector_simulated_when_no_webhook() -> None:
+    approval = client.post(
+        "/v1/approvals/issue",
+        json={"actionType": "hold_payment", "actor": "fin-operator", "reason": "test execution"},
+    )
+    assert approval.status_code == 201
+    approval_id = approval.json()["approvalId"]
+
+    action = client.post(
+        "/v1/actions/execute",
+        json={
+            "actionType": "hold_payment",
+            "target": {"paymentId": "pay_2"},
+            "initiatedBy": "fin-operator",
+            "dryRun": False,
+            "riskTier": "high",
+            "approvalId": approval_id,
+        },
+    )
+    assert action.status_code == 202
+    assert action.json()["state"] == "completed"
+    assert action.json()["details"]["connector"]["connectorMode"] == "simulated"
+
+
+def test_auth_rbac_enabled_blocks_without_headers() -> None:
+    prev_enabled = os.environ.get("AUTH_ENABLED")
+    prev_key = os.environ.get("CONTROL_PLANE_API_KEY")
+    try:
+        os.environ["AUTH_ENABLED"] = "true"
+        os.environ["CONTROL_PLANE_API_KEY"] = "secret-key"
+
+        ingest = client.post(
+            "/v1/events/ingest",
+            json={
+                "eventType": "critical_vulnerability_detected",
+                "domain": "security",
+                "timestamp": "2026-05-01T00:00:00Z",
+                "payload": {"application": "billing-api"},
+            },
+        )
+        assert ingest.status_code == 401
+
+        ingest_ok = client.post(
+            "/v1/events/ingest",
+            headers={"x-api-key": "secret-key", "x-actor-role": "operator"},
+            json={
+                "eventType": "critical_vulnerability_detected",
+                "domain": "security",
+                "timestamp": "2026-05-01T00:00:00Z",
+                "payload": {"application": "billing-api"},
+            },
+        )
+        assert ingest_ok.status_code == 202
+
+        pool_forbidden = client.put(
+            "/v1/platform/pool-config",
+            headers={"x-api-key": "secret-key", "x-actor-role": "operator"},
+            json={
+                "provider": "customer_managed",
+                "poolType": "warehouse",
+                "platform": "snowflake",
+                "region": "us",
+                "owner": "data-platform",
+            },
+        )
+        assert pool_forbidden.status_code == 403
+    finally:
+        if prev_enabled is None:
+            os.environ.pop("AUTH_ENABLED", None)
+        else:
+            os.environ["AUTH_ENABLED"] = prev_enabled
+        if prev_key is None:
+            os.environ.pop("CONTROL_PLANE_API_KEY", None)
+        else:
+            os.environ["CONTROL_PLANE_API_KEY"] = prev_key
