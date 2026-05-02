@@ -5,6 +5,10 @@ a lineage-first AI governance control plane that sits between AI agents and ente
 
 It is designed for low-friction adoption: install fast, run locally, and demo immediately with realistic scenarios.
 
+## Vision and narrative
+
+- Product vision and final landing-copy structure: [`VISION.md`](VISION.md)
+
 ## What the product is about
 
 Most AI agent stacks are one-way:
