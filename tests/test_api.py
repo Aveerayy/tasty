@@ -98,3 +98,51 @@ def test_playground_endpoints() -> None:
     page = client.get("/playground")
     assert page.status_code == 200
     assert "tasty Playground" in page.text
+
+
+def test_intelligence_layer_and_approval_flow() -> None:
+    systems = client.get("/v1/intelligence/systems?domain=security")
+    assert systems.status_code == 200
+    assert len(systems.json()["systems"]) >= 1
+
+    query = client.post(
+        "/v1/intelligence/query",
+        json={"domain": "security", "query": "show risk posture", "includeLineage": True, "includeQuality": True},
+    )
+    assert query.status_code == 200
+    assert "qualitySummary" in query.json()
+
+    # High risk live action without approval should fail
+    fail_action = client.post(
+        "/v1/actions/execute",
+        json={
+            "actionType": "hold_payment",
+            "target": {"paymentId": "pay_1"},
+            "initiatedBy": "fin-operator",
+            "dryRun": False,
+            "riskTier": "high",
+        },
+    )
+    assert fail_action.status_code == 202
+    assert fail_action.json()["state"] == "failed"
+
+    approval = client.post(
+        "/v1/approvals/issue",
+        json={"actionType": "hold_payment", "actor": "fin-operator", "reason": "risk playbook"},
+    )
+    assert approval.status_code == 201
+    approval_id = approval.json()["approvalId"]
+
+    pass_action = client.post(
+        "/v1/actions/execute",
+        json={
+            "actionType": "hold_payment",
+            "target": {"paymentId": "pay_1"},
+            "initiatedBy": "fin-operator",
+            "approvalId": approval_id,
+            "dryRun": False,
+            "riskTier": "high",
+        },
+    )
+    assert pass_action.status_code == 202
+    assert pass_action.json()["state"] == "completed"

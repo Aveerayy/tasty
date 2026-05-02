@@ -17,18 +17,31 @@ class PolicyEngine:
                 allowed=False,
                 reasonCode="actor_not_trusted",
                 requiresApproval=False,
+                riskTier="critical",
                 obligations=[],
             )
 
-        requires_approval = request.actionType in self.HIGH_IMPACT_ACTIONS
+        quality_score = float(request.context.get("qualityScore", 1.0))
+        risk_tier = "low"
+        if quality_score < 0.6:
+            risk_tier = "critical"
+        elif quality_score < 0.75:
+            risk_tier = "high"
+        elif quality_score < 0.9:
+            risk_tier = "medium"
+
+        requires_approval = request.actionType in self.HIGH_IMPACT_ACTIONS or risk_tier in {"high", "critical"}
         obligations = ["log_audit", "record_lineage"]
         if requires_approval:
             obligations.append("human_approval")
+        if risk_tier in {"high", "critical"}:
+            obligations.append("quality_escalation")
 
         return PolicyDecision(
             allowed=True,
             reasonCode="allowed_by_default_policy",
             requiresApproval=requires_approval,
+            riskTier=risk_tier,  # type: ignore[arg-type]
             obligations=obligations,
         )
 

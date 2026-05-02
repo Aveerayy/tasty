@@ -32,6 +32,9 @@ Primary value:
 - Reverse-trigger orchestration for security, finance, and healthcare.
 - Scenario-based fake data demos.
 - Side-by-side model comparison for current vs proposed architecture.
+- Centralized read-only intelligence layer over business systems.
+- Quality-aware trigger decisions and risk-tier policy decisions.
+- Explicit approval token flow for high-risk live execution.
 
 ### Playground capabilities
 
@@ -64,6 +67,7 @@ Primary value:
 Components:
 
 - **API layer** (`app/main.py`)
+- **Intelligence layer** (`app/intelligence.py`)
 - **Policy engine** (`app/policy.py`)
 - **Trigger engine** (`app/triggers.py`)
 - **Execution service** (`app/executor.py`)
@@ -72,6 +76,14 @@ Components:
 - **Playground UI** (`app/static/playground.html`)
 
 This allows a complete end-to-end run path with no external broker or database for first deployment.
+
+## New API endpoints (this iteration)
+
+- `GET /v1/intelligence/systems`
+- `POST /v1/intelligence/query`
+- `POST /v1/approvals/issue`
+
+These complement existing ingestion/trigger/policy/action endpoints.
 
 ## Demo environment setup
 

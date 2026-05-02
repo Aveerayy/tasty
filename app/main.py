@@ -1,14 +1,20 @@
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app.executor import action_executor
+from app.intelligence import intelligence_layer
 from app.models import (
     ActionExecuteRequest,
     ActionStatus,
+    ApprovalRequest,
+    ApprovalToken,
     EventAck,
     IngestEventRequest,
+    IntelligenceQueryRequest,
+    IntelligenceQueryResponse,
     PlaygroundRunRequest,
     PlaygroundRunResponse,
     PolicyDecision,
@@ -63,6 +69,22 @@ def get_action_status(action_id: str) -> ActionStatus:
     if not status:
         raise HTTPException(status_code=404, detail=f"action not found: {action_id}")
     return status
+
+
+@app.post("/v1/approvals/issue", response_model=ApprovalToken, status_code=201)
+def issue_approval(request: ApprovalRequest) -> ApprovalToken:
+    return store.create_approval(actor=request.actor)
+
+
+@app.get("/v1/intelligence/systems")
+def list_intelligence_systems(domain: Optional[str] = None) -> dict:
+    systems = store.list_systems(domain)
+    return {"systems": [s.model_dump() for s in systems]}
+
+
+@app.post("/v1/intelligence/query", response_model=IntelligenceQueryResponse)
+def intelligence_query(request: IntelligenceQueryRequest) -> IntelligenceQueryResponse:
+    return intelligence_layer.query(request)
 
 
 @app.get("/playground", response_class=HTMLResponse)

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 Domain = Literal["security", "finance", "healthcare"]
 ActionState = Literal["pending", "approved", "executing", "completed", "failed", "rolled_back"]
 PlaygroundMode = Literal["today", "reverse"]
+RiskTier = Literal["low", "medium", "high", "critical"]
 
 
 class IngestEventRequest(BaseModel):
@@ -17,6 +18,7 @@ class IngestEventRequest(BaseModel):
     timestamp: datetime
     lineageRef: Optional[str] = None
     payload: dict[str, Any]
+    quality: dict[str, Any] = Field(default_factory=dict)
 
 
 class EventAck(BaseModel):
@@ -34,6 +36,7 @@ class PolicyDecision(BaseModel):
     allowed: bool
     reasonCode: str
     requiresApproval: bool = False
+    riskTier: RiskTier = "low"
     obligations: list[str] = Field(default_factory=list)
 
 
@@ -48,6 +51,8 @@ class TriggerDecision(BaseModel):
     triggerType: str
     recommendedAction: Optional[str] = None
     confidence: float = 0.0
+    qualityScore: float = 1.0
+    explanation: str = ""
 
 
 class ActionExecuteRequest(BaseModel):
@@ -56,6 +61,7 @@ class ActionExecuteRequest(BaseModel):
     initiatedBy: str
     approvalId: Optional[str] = None
     dryRun: bool = True
+    riskTier: RiskTier = "low"
 
 
 class ActionStatus(BaseModel):
@@ -65,6 +71,45 @@ class ActionStatus(BaseModel):
     updatedAt: datetime
     auditRef: Optional[str] = None
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ApprovalRequest(BaseModel):
+    actionType: str
+    actor: str
+    reason: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ApprovalToken(BaseModel):
+    approvalId: str
+    approved: bool
+    approvedBy: str
+    createdAt: datetime
+    expiresAt: datetime
+
+
+class IntelligenceSystem(BaseModel):
+    systemId: str
+    name: str
+    domain: Domain
+    freshnessMinutes: int
+    qualityScore: float
+    lineageCoverage: float
+    readOnly: bool = True
+
+
+class IntelligenceQueryRequest(BaseModel):
+    domain: Domain
+    query: str
+    includeLineage: bool = True
+    includeQuality: bool = True
+
+
+class IntelligenceQueryResponse(BaseModel):
+    domain: Domain
+    answer: str
+    systems: list[IntelligenceSystem]
+    qualitySummary: dict[str, Any] = Field(default_factory=dict)
 
 
 class PlaygroundRunRequest(BaseModel):

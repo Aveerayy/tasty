@@ -38,6 +38,7 @@ class PlaygroundService:
                             "cve": "CVE-2026-0001",
                             "severity": "critical",
                         },
+                        "quality": {"freshness": 0.95, "completeness": 0.94, "lineageCoverage": 0.91},
                     },
                     "ruleSet": "security-default",
                 }
@@ -54,6 +55,7 @@ class PlaygroundService:
                             "accountId": "acct_44",
                             "riskScore": 0.94,
                         },
+                        "quality": {"freshness": 0.9, "completeness": 0.89, "lineageCoverage": 0.86},
                     },
                     "ruleSet": "finance-default",
                 }
@@ -69,6 +71,7 @@ class PlaygroundService:
                             "patientRecordId": "pr_552",
                             "missingCriticalFields": True,
                         },
+                        "quality": {"freshness": 0.82, "completeness": 0.88, "lineageCoverage": 0.9},
                     },
                     "ruleSet": "healthcare-default",
                 }
@@ -109,6 +112,7 @@ class PlaygroundService:
             domain=request.domain,
             timestamp=datetime.now(timezone.utc),
             payload=scenario["event"]["payload"],
+            quality=scenario["event"].get("quality", {}),
         )
         event_id = store.ingest_event(event_request)
         steps.append(
@@ -123,7 +127,11 @@ class PlaygroundService:
             "hold_payment" if request.domain == "finance" else "open_data_stewardship_task"
         )
         policy = policy_engine.evaluate(
-            PolicyEvaluationRequest(actionType=action_type, actor=request.actor, context={"mode": "today"})
+            PolicyEvaluationRequest(
+                actionType=action_type,
+                actor=request.actor,
+                context={"mode": "today", "qualityScore": self._quality_score(scenario)},
+            )
         )
         steps.append(
             PlaygroundStep(
@@ -148,6 +156,7 @@ class PlaygroundService:
                 target=scenario["event"]["payload"],
                 initiatedBy=request.actor,
                 dryRun=request.dryRun,
+                riskTier=policy.riskTier,
             )
         )
         steps.append(PlaygroundStep(name="action_execution", status="done", detail=action.model_dump(mode="json")))
@@ -168,6 +177,7 @@ class PlaygroundService:
             domain=request.domain,
             timestamp=datetime.now(timezone.utc),
             payload=scenario["event"]["payload"],
+            quality=scenario["event"].get("quality", {}),
         )
         event_id = store.ingest_event(event_request)
         steps.append(
@@ -200,7 +210,7 @@ class PlaygroundService:
             PolicyEvaluationRequest(
                 actionType=trigger.recommendedAction,
                 actor=request.actor,
-                context={"mode": "reverse", "eventId": event_id},
+                context={"mode": "reverse", "eventId": event_id, "qualityScore": trigger.qualityScore},
             )
         )
         steps.append(PlaygroundStep(name="policy_loop", status="done" if policy.allowed else "failed", detail=policy.model_dump()))
@@ -215,11 +225,16 @@ class PlaygroundService:
             )
 
         if policy.requiresApproval:
+            approval = store.create_approval(actor=request.actor)
             steps.append(
                 PlaygroundStep(
                     name="approval_loop",
                     status="done",
-                    detail={"approval": "simulated_approved", "reason": "playground auto-approval"},
+                    detail={
+                        "approval": "simulated_approved",
+                        "approvalId": approval.approvalId,
+                        "reason": "playground auto-approval",
+                    },
                 )
             )
         else:
@@ -231,6 +246,8 @@ class PlaygroundService:
                 target=event_request.payload,
                 initiatedBy=request.actor,
                 dryRun=request.dryRun,
+                approvalId=approval.approvalId if policy.requiresApproval else None,
+                riskTier=policy.riskTier,
             )
         )
         steps.append(PlaygroundStep(name="execution_loop", status="done", detail=action.model_dump(mode="json")))
@@ -248,6 +265,13 @@ class PlaygroundService:
             if scenario["id"] == scenario_id:
                 return deepcopy(scenario)
         return None
+
+    def _quality_score(self, scenario: dict[str, Any]) -> float:
+        quality = scenario.get("event", {}).get("quality", {})
+        freshness = float(quality.get("freshness", 1.0))
+        completeness = float(quality.get("completeness", 1.0))
+        lineage = float(quality.get("lineageCoverage", 1.0))
+        return round((freshness + completeness + lineage) / 3.0, 3)
 
 
 playground_service = PlaygroundService()

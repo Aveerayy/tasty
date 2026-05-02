@@ -21,8 +21,10 @@ That reverse-trigger model turns governance signals into safe, auditable automat
 
 - FastAPI control plane service
 - Event ingestion endpoint
+- Read-only intelligence layer endpoints
 - Policy evaluation engine
 - Reverse-trigger evaluation engine
+- Approval issuance endpoint for governed live execution
 - Action execution endpoint (dry-run + simulated live mode)
 - In-memory audit/action store
 - Starter data contracts for security, finance, healthcare
@@ -40,11 +42,23 @@ Core flow:
 4. **Execute action** (`/v1/actions/execute`) in dry-run or live mode.
 5. **Track status** (`/v1/actions/{id}`) with audit references.
 
+Intelligence + governance extensions:
+
+- **List systems** (`/v1/intelligence/systems`) for centralized read-only business context.
+- **Query intelligence layer** (`/v1/intelligence/query`) with quality/lineage summary.
+- **Issue approval token** (`/v1/approvals/issue`) for high-risk live actions.
+
 Playground adds orchestration endpoints:
 
 - `GET /v1/playground/scenarios`
 - `POST /v1/playground/run`
 - `POST /v1/playground/reset`
+
+Quality/trust now influence runtime decisions:
+
+- Trigger thresholds require minimum quality score.
+- Policy risk tier (`low|medium|high|critical`) is derived from quality.
+- High/critical live actions require valid approval tokens.
 
 ## Playground (live product demo)
 
