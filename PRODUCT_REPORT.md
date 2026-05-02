@@ -29,6 +29,7 @@ Primary value:
 ### Product capabilities
 
 - Event ingestion, trigger evaluation, policy evaluation, action execution, action status.
+- ETL source registration and ETL run telemetry for data-pool onboarding.
 - Reverse-trigger orchestration for security, finance, and healthcare.
 - Scenario-based fake data demos.
 - Side-by-side model comparison for current vs proposed architecture.
@@ -82,6 +83,10 @@ This allows a complete end-to-end run path with no external broker or database f
 - `GET /v1/intelligence/systems`
 - `POST /v1/intelligence/query`
 - `POST /v1/approvals/issue`
+- `POST /v1/etl/sources`
+- `GET /v1/etl/sources`
+- `POST /v1/etl/runs`
+- `GET /v1/etl/runs`
 
 These complement existing ingestion/trigger/policy/action endpoints.
 

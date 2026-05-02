@@ -51,6 +51,8 @@ Intelligence + governance extensions:
 - **List systems** (`/v1/intelligence/systems`) for centralized read-only business context.
 - **Query intelligence layer** (`/v1/intelligence/query`) with quality/lineage summary.
 - **Issue approval token** (`/v1/approvals/issue`) for high-risk live actions.
+- **Register ETL source** (`/v1/etl/sources`) for business-system onboarding.
+- **Record ETL run** (`/v1/etl/runs`) to update freshness/quality/lineage signals.
 
 Playground adds orchestration endpoints:
 
@@ -140,6 +142,19 @@ docker compose up --build
 ```bash
 curl -s http://127.0.0.1:8000/health
 curl -s http://127.0.0.1:8000/v1/playground/scenarios
+curl -s "http://127.0.0.1:8000/v1/intelligence/systems?domain=finance"
+```
+
+### Register ETL source and ingestion run (example)
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/v1/etl/sources \
+  -H "Content-Type: application/json" \
+  -d '{"sourceId":"src_salesforce_crm","name":"Salesforce CRM","systemType":"salesforce","domain":"finance","connectionMode":"api","owner":"data-platform","metadata":{"region":"us"}}'
+
+curl -s -X POST http://127.0.0.1:8000/v1/etl/runs \
+  -H "Content-Type: application/json" \
+  -d '{"sourceId":"src_salesforce_crm","recordsExtracted":1000,"recordsLoaded":995,"status":"partial","qualityScore":0.8,"lineageCoverage":0.85,"notes":"minor schema drift handled"}'
 ```
 
 ## Run tests

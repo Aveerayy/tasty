@@ -146,3 +146,42 @@ def test_intelligence_layer_and_approval_flow() -> None:
     )
     assert pass_action.status_code == 202
     assert pass_action.json()["state"] == "completed"
+
+
+def test_etl_source_and_runs_update_intelligence() -> None:
+    source = client.post(
+        "/v1/etl/sources",
+        json={
+            "sourceId": "src_salesforce_crm",
+            "name": "Salesforce CRM",
+            "systemType": "salesforce",
+            "domain": "finance",
+            "connectionMode": "api",
+            "owner": "data-platform",
+            "metadata": {"region": "us"},
+        },
+    )
+    assert source.status_code == 201
+
+    run = client.post(
+        "/v1/etl/runs",
+        json={
+            "sourceId": "src_salesforce_crm",
+            "recordsExtracted": 1000,
+            "recordsLoaded": 995,
+            "status": "partial",
+            "qualityScore": 0.8,
+            "lineageCoverage": 0.85,
+            "notes": "minor schema drift handled",
+        },
+    )
+    assert run.status_code == 201
+    assert run.json()["sourceId"] == "src_salesforce_crm"
+
+    sources = client.get("/v1/etl/sources?domain=finance")
+    assert sources.status_code == 200
+    assert len(sources.json()["sources"]) >= 1
+
+    runs = client.get("/v1/etl/runs?sourceId=src_salesforce_crm")
+    assert runs.status_code == 200
+    assert len(runs.json()["runs"]) >= 1

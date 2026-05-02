@@ -112,6 +112,49 @@ class IntelligenceQueryResponse(BaseModel):
     qualitySummary: dict[str, Any] = Field(default_factory=dict)
 
 
+class EtlSourceRequest(BaseModel):
+    sourceId: str
+    name: str
+    systemType: str
+    domain: Domain
+    connectionMode: Literal["api", "db", "stream", "file"]
+    owner: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class EtlSource(BaseModel):
+    sourceId: str
+    name: str
+    systemType: str
+    domain: Domain
+    connectionMode: Literal["api", "db", "stream", "file"]
+    owner: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    createdAt: datetime
+
+
+class EtlRunRequest(BaseModel):
+    sourceId: str
+    recordsExtracted: int
+    recordsLoaded: int
+    status: Literal["success", "partial", "failed"]
+    qualityScore: float = 1.0
+    lineageCoverage: float = 1.0
+    notes: Optional[str] = None
+
+
+class EtlRunRecord(BaseModel):
+    runId: str
+    sourceId: str
+    recordsExtracted: int
+    recordsLoaded: int
+    status: Literal["success", "partial", "failed"]
+    qualityScore: float
+    lineageCoverage: float
+    notes: Optional[str] = None
+    createdAt: datetime
+
+
 class PlaygroundRunRequest(BaseModel):
     mode: PlaygroundMode
     domain: Domain

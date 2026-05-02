@@ -12,6 +12,10 @@ from app.models import (
     ApprovalRequest,
     ApprovalToken,
     EventAck,
+    EtlRunRecord,
+    EtlRunRequest,
+    EtlSource,
+    EtlSourceRequest,
     IngestEventRequest,
     IntelligenceQueryRequest,
     IntelligenceQueryResponse,
@@ -85,6 +89,30 @@ def list_intelligence_systems(domain: Optional[str] = None) -> dict:
 @app.post("/v1/intelligence/query", response_model=IntelligenceQueryResponse)
 def intelligence_query(request: IntelligenceQueryRequest) -> IntelligenceQueryResponse:
     return intelligence_layer.query(request)
+
+
+@app.post("/v1/etl/sources", response_model=EtlSource, status_code=201)
+def register_etl_source(request: EtlSourceRequest) -> EtlSource:
+    return store.register_source(request)
+
+
+@app.get("/v1/etl/sources")
+def list_etl_sources(domain: Optional[str] = None) -> dict:
+    sources = store.list_sources(domain)
+    return {"sources": [s.model_dump(mode="json") for s in sources]}
+
+
+@app.post("/v1/etl/runs", response_model=EtlRunRecord, status_code=201)
+def record_etl_run(request: EtlRunRequest) -> EtlRunRecord:
+    if request.sourceId not in {s.sourceId for s in store.list_sources()}:
+        raise HTTPException(status_code=404, detail=f"etl source not found: {request.sourceId}")
+    return store.record_etl_run(request)
+
+
+@app.get("/v1/etl/runs")
+def list_etl_runs(sourceId: Optional[str] = None) -> dict:
+    runs = store.list_etl_runs(source_id=sourceId)
+    return {"runs": [r.model_dump(mode="json") for r in runs]}
 
 
 @app.get("/playground", response_class=HTMLResponse)
